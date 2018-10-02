@@ -31,7 +31,7 @@ import uri
 import webgraphdb
 import withfile
 
-__doc__ = """web spiders"""
+__doc__ = "web spiders"
 
 global DEFAULT_CALLBACK
 
