@@ -80,4 +80,3 @@ class Threaded:
         if self.nthreads:
             with self._nactive_threads_lock:
                 self.nactive_threads -= 1
-            thread.exit()
