@@ -13,45 +13,41 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+__package__ = "threaded"
+
 import Queue
 import thread
 
-__doc__ = """threaded callable representation"""
+__doc__ = "threaded callable representation"
 
-class FuncQueue(Queue.Queue):
-    """a function representation queue"""
-    
-    def __init__(self, *args, **kwargs):
-        Queue.Queue.__init__(self, *args, **kwargs)
+class FuncInfo:
+    """information about a function call"""
 
-    def get(self):
-        """return a dictionary mapping component names to values"""
-        fak, output = Queue.Queue.get(self)
-        func, args, kwargs = fak
-        return {"args": args, "func": func, "kwargs": kwargs, "output": output}
-
-    def put(self, func, args, kwargs, output):
-        Queue.Queue.put(self, ((func, args, kwargs), output))
+    def __init__(self, func, output, args, kwargs):
+        self.args = args
+        self.func = func
+        self.kwargs = kwargs
+        self.output = output
 
 class Threaded:
     """
-    allocates up to N threads for function calls (w/ blocking)
+    allocates up to N additional threads for function calls (w/ blocking)
     or run function calls in the current thread if nthreads == 0
 
     output is optionally stored into self.output_queue
+
+    when nthreads <= 0, allocate_thread operates in the calling thread
     """
     
     def __init__(self, nthreads = 1, queue_output = False):
         self._allocation_lock = thread.allocate_lock()
         self.nactive_threads = 0
         self._nactive_threads_lock = thread.allocate_lock()
-        assert isinstance(nthreads, int) and nthreads >= 0, \
-            "nthreads must be an integer >= 0"
         self.nthreads = nthreads
         self.output_queue = None
 
         if queue_output:
-            self.output_queue = FuncQueue()
+            self.output_queue = Queue.Queue()
 
     def allocate_thread(self, func, *args, **kwargs):
         """block until thread allocation is possible"""
@@ -65,17 +61,18 @@ class Threaded:
             thread.start_new_thread(self._handle_thread,
                 tuple([func] + list(args)), kwargs)
         else:
-            self._handle_thread(func, *args, **kwargs)
+            with self._allocation_lock: # block
+                self._handle_thread(func, *args, **kwargs)
 
     def _handle_thread(self, func, *args, **kwargs):
-        """handle the current thread's execution (exiting as necessary)"""
+        """handle the current thread's execution"""
         try:
             output = func(*args, **kwargs)
         except Exception as output:
             pass
 
         if isinstance(self.output_queue, FuncQueue):
-            self.output_queue.put(func, args, kwargs, output)
+            self.output_queue.put(FuncInfo(func, output, *args, **kwargs))
 
         if self.nthreads:
             with self._nactive_threads_lock:

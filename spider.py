@@ -388,7 +388,7 @@ class ThreadedSpider(Spider, threaded.Threaded):
     def __call__(self):
         try:
             while self.output_queue.empty() \
-                    or self.output_queue.get()["output"]:
+                    or self.output_queue.get().output:
                 with self._nactive_threads_lock:
                     if self.queue.empty() and not self.nactive_threads:
                         break
