@@ -36,7 +36,8 @@ class Threaded:
 
     output is optionally stored into self.output_queue
 
-    when nthreads <= 0, allocate_thread operates in the calling thread
+    when nthreads == 0, tasks are executed in the calling thread
+    when nthreads < 0, tasks are always executed in a new thread
     """
     
     def __init__(self, nthreads = 1, queue_output = False):
@@ -52,12 +53,14 @@ class Threaded:
     def allocate_thread(self, func, *args, **kwargs):
         """block until thread allocation is possible"""
         if self.nthreads:
-            with self._allocation_lock: # block until we can allocate a thread
-                while 1:
-                    with self._nactive_threads_lock:
-                        if self.nactive_threads < self.nthreads:
-                            self.nactive_threads += 1
-                            break
+            if self.nthreads > 0:
+                with self._allocation_lock: # block
+                    while 1:
+                        with self._nactive_threads_lock:
+                            if self.nactive_threads < self.nthreads:
+                                self.nactive_threads += 1
+                                break
+            # otherwise, self.nthreads < 0, so we don't block
             thread.start_new_thread(self._handle_thread,
                 tuple([func] + list(args)), kwargs)
         else:
