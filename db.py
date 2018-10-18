@@ -156,7 +156,7 @@ class DB:
                 pass
 
     def _generate_path(self, name):
-        """return the hashed equivalent of a name (None is evaluated as '')"""
+        """return the hashed equivalent of a name (None is evaluated as "")"""
         if not isinstance(name, list) and not isinstance(name, tuple):
             name = [name]
         else:
@@ -164,7 +164,7 @@ class DB:
 
         for i, n in enumerate(name):
             if n == None:
-                n = ''
+                n = ""
             name[i] = self._hash(n)
         return os.path.join(os.path.realpath(self.directory), *name)
 
@@ -267,7 +267,7 @@ class DBEntry:
             if rmemptydirs:
                 dir = self.directory
 
-                while not dir in ('', os.sep) and not os.listdir(dir):
+                while not dir in ("", os.sep) and not os.listdir(dir):
                     os.rmdir(dir)
                     dir = os.path.dirname(dir)
 
@@ -293,7 +293,7 @@ class DBEntry:
     def get(self, offset = 0, whence = os.SEEK_SET):
         """get the entry's data"""
         self.__enter__()
-        data = ''
+        data = ""
 
         with withfile.FileLock(self._fp):
             start = self._fp.tell()
@@ -308,7 +308,7 @@ class DBEntry:
 
 if __name__ == "__main__":
     action = None
-    data = ''
+    data = ""
     db = None
     directory = None
     name = None

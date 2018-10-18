@@ -53,7 +53,7 @@ def decode(string, chars = None, avoid = None):
             as_list.append(c)
             i += 2
         i += 1
-    return ''.join(as_list)
+    return "".join(as_list)
 
 def encode(string, chars = None, avoid = None):
     """
@@ -69,7 +69,7 @@ def encode(string, chars = None, avoid = None):
             continue
         elif (chars and c in chars) or (not chars and c in RESERVED_CHARS):
             as_list[i] = _encode(c)
-    return ''.join(as_list)
+    return "".join(as_list)
 
 def remove_redundancies(path):
     """remove redundancies from a path"""
@@ -91,7 +91,7 @@ def resolve(path):
     
     while '.' in resolved:
         resolved.remove('.')
-    absolute = not resolved or resolved[0] == ''
+    absolute = not resolved or resolved[0] == ""
     
     while ".." in resolved:
         i = resolved.index("..")
@@ -101,7 +101,7 @@ def resolve(path):
             del resolved[i - 1]
     
     if absolute:
-        resolved.insert(0, '')
+        resolved.insert(0, "")
     del absolute
     return remove_redundancies('/'.join(resolved))
 
@@ -135,7 +135,7 @@ class CSV(list):
             raise TypeError("csv must be a list, tuple, or string")
         list.__init__(self)
         
-        entry = ''
+        entry = ""
         esc = False
         i = 0
         row = []
@@ -161,7 +161,7 @@ class CSV(list):
                 row = []
             elif csv[i:i + 1] == self.flavor.sepchar:
                 row.append(entry)
-                entry = ''
+                entry = ""
             else:
                 entry += c
             i += 1
@@ -247,7 +247,7 @@ class URI:
     note that subclasses fully override the __str__ function
     """
 
-    def __init__(self, uri = ''):
+    def __init__(self, uri = ""):
         if not isinstance(uri, str):
             raise TypeError("uri must be a string")
         self.fragment = None
@@ -288,7 +288,7 @@ class URI:
                 as_list.append(s)
                 as_list.append(getattr(self, a))
         # [scheme:][hier-part][?query][#fragment]
-        return ''.join((str(e) for e in as_list))
+        return "".join((str(e) for e in as_list))
 
 class SMS(URI):
     """
@@ -297,7 +297,7 @@ class SMS(URI):
     note that the specification allows or a maximum of 1 value for the body
     """
     
-    def __init__(self, uri = ''):
+    def __init__(self, uri = ""):
         # sms:[recipients][?query]
         
         URI.__init__(self, uri)
@@ -325,12 +325,12 @@ class SMS(URI):
                 as_list.append(s)
                 as_list.append(getattr(self, a))
         # [scheme:][recipients][?query][#fragment]
-        return ''.join((str(e) for e in as_list))
+        return "".join((str(e) for e in as_list))
 
 class TEL(URI):
     """the telephone URI as per RFC 3966"""
 
-    def __init__(self, uri = ''):
+    def __init__(self, uri = ""):
         # tel:[recipients]
         
         URI.__init__(self, uri)
@@ -356,7 +356,7 @@ class TEL(URI):
                 as_list.append(s)
                 as_list.append(getattr(self, a))
         # [scheme:][recipients][?query][#fragment]
-        return ''.join((str(e) for e in as_list))
+        return "".join((str(e) for e in as_list))
 
 class URL(URI):
     """
@@ -378,7 +378,7 @@ class URL(URI):
         "username"
         ]
     
-    def __init__(self, url = ''):
+    def __init__(self, url = ""):
         URI.__init__(self) # override parsing
         
         self.domains = []
@@ -449,13 +449,13 @@ class URL(URI):
                 url = url[url.find(':'):]
             else:
                 self.domains = url
-                url = ''
+                url = ""
 
             if '.' in self.domains:
                 self.domains = self.domains.split('.')
             else:
-                d = ''
-                p = ''
+                d = ""
+                p = ""
                 
                 if self.domains:
                     d = self.domains
@@ -476,7 +476,7 @@ class URL(URI):
         if url.startswith(':'):
             try:
                 self.port = int(url[1:].strip())
-                url = ''
+                url = ""
             except ValueError:
                 pass
         
@@ -517,7 +517,7 @@ class URL(URI):
 
     def _domains(self):
         """return a string representation of the domains"""
-        as_string = ''
+        as_string = ""
 
         if self.ip_version == 4:
             as_string = '.'.join(self.domains)
@@ -591,4 +591,4 @@ class URL(URI):
                 as_list.append(getattr(self, a))
         # [scheme:][//][user[:password]@][host[:port]]
         # [/path][;parameters][?query][#fragment]
-        return ''.join((str(e) for e in as_list))
+        return "".join((str(e) for e in as_list))
