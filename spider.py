@@ -392,7 +392,7 @@ class ThreadedSpider(Spider, threaded.Threaded):
                 with self._nactive_threads_lock:
                     if self.queue.empty() and not self.nactive_threads:
                         break
-                self.allocate_thread(self.handle_url, self.queue.get())
+                self.execute(self.handle_url, self.queue.get())
         except KeyboardInterrupt:
             pass
         # can't efficiently wait for termination of all child threads
