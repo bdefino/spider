@@ -23,13 +23,10 @@ import threading
 import time
 import urllib2
 
-sys.path.append(os.path.realpath(__file__))
-
-import db as _db
-import threaded
-import uri
-import webgraphdb
-import withfile
+from lib import db as _db
+from lib import threaded
+from lib import uri
+from lib import withfile
 
 __doc__ = "web spiders"
 
