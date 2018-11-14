@@ -15,7 +15,152 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 __package__ = __name__
 
+import Queue
+import sys
+
+import callback
 from lib import uri
 import spider
+import url
 
 __doc__ = "simple web spidering"
+
+def _help():
+    """print help text"""
+    print "a basic web spider\n" \
+          "Usage: python spider.py [OPTIONS] URLS\n" \
+          "OPTIONS\n" \
+          "\t\t--bodies PATH\tstore response bodies to a database\n" \
+          "\t-h, --help\tshow this text and exit\n" \
+          "\t\t--headers PATH\tstore response headers to a database\n" \
+          "\t-n, --nthreads INT\tthe number of concurrent threads\n" \
+          "\t-t, --timeout FLOAT\tthe timeout\n" \
+          "\t\t--webgraph PATH\tstore webgraph to a database\n" \
+          "URLS\n" \
+          "\ta list of URLs"
+
+def main():
+    """run the spider"""
+    i = 1
+    _callback = callback.DEFAULT_CALLBACK
+    nthreads = 0
+    request_factory = None
+    _spider = None
+    timeout = None
+    url_queue = Queue.Queue()
+
+    if len(sys.argv) < 2:
+        _help()
+        sys.exit()
+
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+
+        if arg.startswith("--"):
+            arg = arg[2:]
+
+            if arg == "bodies":
+                if i == len(sys.argv) - 1:
+                    print "Missing argument."
+                    _help()
+                    sys.exit()
+                _callback = BodyStorageCallback(_db.DB(sys.argv[i + 1]))
+                i += 1
+            elif arg == "headers":
+                if i == len(sys.argv) - 1:
+                    print "Missing argument."
+                    _help()
+                    sys.exit()
+                _callback = HeaderStorageCallback(_db.DB(sys.argv[i + 1]))
+                i += 1
+            elif arg == "help":
+                _help()
+                sys.exit()
+            elif arg == "nthreads":
+                if i == len(sys.argv) - 1:
+                    print "Missing argument."
+                    _help()
+                    sys.exit()
+
+                try:
+                    nthreads = int(sys.argv[i + 1])
+                except ValueError:
+                    pass
+                i += 1
+            elif arg == "responses":
+                if i == len(sys.argv) - 1:
+                    print "Missing argument."
+                    _help()
+                    sys.exit()
+                _callback = callback.StorageCallback(_db.DB(sys.argv[i + 1]))
+                i += 1
+            elif arg == "timeout":
+                if i == len(sys.argv) - 1:
+                    print "Missing argument."
+                    _help()
+                    sys.exit()
+
+                try:
+                    timeout = float(sys.argv[i + 1])
+                except ValueError:
+                    pass
+                i += 1
+            elif arg == "webgraph":
+                if i == len(sys.argv) - 1:
+                    print "Missing argument."
+                    _help()
+                    sys.exit()
+                _callback = callback.WebgraphStorageCallback(_db.DB(
+                    sys.argv[i + 1]))
+                i += 1
+            else:
+                print "Invalid argument."
+                _help()
+                sys.exit()
+        elif arg.startswith('-'):
+            arg = arg[1:]
+
+            for c in arg:
+                if c == 'h':
+                    _help()
+                    sys.exit()
+                elif c == 'n':
+                    if i == len(sys.argv) - 1:
+                        print "Missing argument."
+                        _help()
+                        sys.exit()
+
+                    try:
+                        nthreads = int(sys.argv[i + 1])
+                    except ValueError:
+                        pass
+                    i += 1
+                elif c == 't':
+                    if i == len(sys.argv) - 1:
+                        print "Missing argument."
+                        _help()
+                        sys.exit()
+
+                    try:
+                        timeout = float(sys.argv[i + 1])
+                    except ValueError:
+                        pass
+                    i += 1
+                else:
+                    print "Invalid flag."
+                    _help()
+                    sys.exit()
+        elif arg:
+            url_queue.put(arg)
+        i += 1
+
+    if nthreads:
+        _spider = spider.ThreadedSpider(callback = _callback,
+            nthreads = nthreads, url_queue = url_queue, timeout = timeout)
+    else:
+        _spider = Spider(callback = _callback, url_queue = url_queue,
+            timeout = timeout)
+    _spider()
+
+if __name__ == "__main__":
+    main()
