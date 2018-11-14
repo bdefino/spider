@@ -17,6 +17,8 @@ import csv
 import HTMLParser
 import os
 import Queue
+import socket
+import ssl
 import StringIO
 import sys
 import threading
@@ -77,10 +79,10 @@ def main():
     i = 1
     callback = DEFAULT_CALLBACK
     nthreads = 0
-    queue = Queue.Queue()
     request_factory = None
     spider = None
     timeout = None
+    url_queue = Queue.Queue()
 
     if len(sys.argv) < 2:
         _help()
@@ -183,14 +185,14 @@ def main():
                     _help()
                     sys.exit()
         elif arg:
-            queue.put(arg)
+            url_queue.put(arg)
         i += 1
 
     if nthreads:
         spider = ThreadedSpider(callback = callback, nthreads = nthreads,
-            queue = queue, timeout = timeout)
+            url_queue = url_queue, timeout = timeout)
     else:
-        spider = Spider(callback = callback, queue = queue, timeout = timeout)
+        spider = Spider(callback = callback, url_queue = url_queue, timeout = timeout)
     spider()
 
 class Callback:
@@ -323,19 +325,16 @@ class RequestFactory:
 class Spider:
     """
     a web spider (by default, single-threaded)
-    which gets/puts URLs to/from the queue (which should implement the
-    native Python queue API)
+    which gets/puts URLs to/from the url_queue (which should implement the
+    native Python url_queue API)
     """
     
-    def __init__(self, queue = None, callback = None, request_factory = None,
-            url_class = None, *urlopen_args, **urlopen_kwargs):
+    def __init__(self, url_queue = None, callback = None,
+            request_factory = None, url_class = None, *urlopen_args,
+            **urlopen_kwargs):
         if not callback:
             callback = DEFAULT_CALLBACK
         self.callback = callback
-        
-        if not queue:
-            queue = Queue.Queue()
-        self.queue = queue
 
         if not request_factory:
             request_factory = RequestFactory()
@@ -347,49 +346,53 @@ class Spider:
         self.urlopen_args = urlopen_args
         self.urlopen_kwargs = urlopen_kwargs
 
+        if not url_queue:
+            url_queue = Queue.Queue()
+        self.url_queue = url_queue
+
     def __call__(self):
         """continually crawl until told otherwise"""
         try:
-            while not self.queue.empty() and self.handle_url(self.queue.get()):
+            while not self.url_queue.empty() \
+                    and self.handle_url(self.url_queue.get()):
                 pass
         except KeyboardInterrupt:
             pass
 
     def __enter__(self):
-        if hasattr(self.queue, "__enter__"):
-            getattr(self.queue, "__enter__")()
+        if hasattr(self.url_queue, "__enter__"):
+            getattr(self.url_queue, "__enter__")()
 
     def __exit__(self, *exception):
-        if hasattr(self.queue, "__exit__"):
-            getattr(self.queue, "__exit__")()
+        if hasattr(self.url_queue, "__exit__"):
+            getattr(self.url_queue, "__exit__")()
 
     def handle_url(self, url):
         try:
             response = urllib2.urlopen(self.request_factory(url),
                 *self.urlopen_args, **self.urlopen_kwargs)
-        except (urllib2.HTTPError, urllib2.URLError): # ignore errors
+            _continue, links = self.callback(response)
+        except (socket.error, ssl.SSLError, urllib2.HTTPError,
+                urllib2.URLError):
             return True
-        _continue, links = self.callback(response)
 
         for l in links:
-            self.queue.put(l)
+            self.url_queue.put(l)
         return _continue
 
 class ThreadedSpider(Spider, threaded.Threaded):
-    def __init__(self, queue = None, callback = None, nthreads = 1,
+    def __init__(self, url_queue = None, callback = None, nthreads = 1,
             request_factory = None, url_class = None, *args, **kwargs):
-        Spider.__init__(self, queue, callback, request_factory, url_class,
+        Spider.__init__(self, url_queue, callback, request_factory, url_class,
             *args, **kwargs)
         threaded.Threaded.__init__(self, nthreads, True)
 
     def __call__(self):
         try:
-            while self.output_queue.empty() \
-                    or self.output_queue.get().output:
-                with self._nactive_threads_lock:
-                    if self.queue.empty() and not self.nactive_threads:
-                        break
-                self.execute(self.handle_url, self.queue.get())
+            while self.empty() or self.get().output:
+                if self.url_queue.empty() and not self.nactive_threads.get():
+                    break
+                self.execute(self.handle_url, self.url_queue.get())
         except KeyboardInterrupt:
             pass
         # can't efficiently wait for termination of all child threads
