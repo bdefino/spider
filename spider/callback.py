@@ -19,7 +19,6 @@ import threading
 
 import htmlextract
 from lib import db as _db
-from lib import withfile
 import url
 
 __doc__ = "spider callbacks"
