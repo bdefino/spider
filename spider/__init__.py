@@ -19,6 +19,7 @@ import Queue
 import sys
 
 import callback
+import htmlextract
 from lib import uri
 import spider
 import url
@@ -158,7 +159,7 @@ def main():
         _spider = spider.ThreadedSpider(callback = _callback,
             nthreads = nthreads, url_queue = url_queue, timeout = timeout)
     else:
-        _spider = Spider(callback = _callback, url_queue = url_queue,
+        _spider = spider.Spider(callback = _callback, url_queue = url_queue,
             timeout = timeout)
     _spider()
 

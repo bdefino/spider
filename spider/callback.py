@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import csv
-import HTMLParser
 import StringIO
 import threading
 
+import htmlextract
 from lib import db as _db
 from lib import withfile
 import url
@@ -25,29 +25,6 @@ import url
 __doc__ = "spider callbacks"
 
 global DEFAULT_CALLBACK
-
-def _extract_links(header, body):
-    """parse links from an HTTP response"""
-    parser = _DefaultHTMLParser()
-    
-    try:
-        if header.has_key("Content-Type"):
-            for k_v in header["Content-Type"].split(';'):
-                if not '=' in k_v:
-                    continue
-                k, v = [e.strip() for e in k_v.split('=')]
-
-                if k.lower() == "charset":
-                    try:
-                        body = body.decode(v)
-                        break
-                    except ValueError:
-                        pass
-        parser.feed(body)
-        parser.close()
-    except KeyboardInterrupt:
-        raise KeyboardInterrupt()
-    return parser._urls
 
 class Callback:
     """
@@ -74,8 +51,8 @@ class Callback:
             if __debug__:
                 print "(%u)" % self.depth, url
             return not self.depth == 0, \
-                [str(url.bind(l)) for l in _extract_links(response.info(),
-                    response.read())]
+                [str(url.bind(l)) for l in htmlextract.extract_links(
+                    response.info(), response.read())]
 
 DEFAULT_CALLBACK = Callback()
 
@@ -152,16 +129,3 @@ class WebgraphStorageCallback(StorageCallback):
         doc = fp.getvalue()
         fp.close()
         return doc
-
-class _DefaultHTMLParser(HTMLParser.HTMLParser):
-    """HTML link parser (href attributes only)"""
-    
-    def __init__(self):
-        HTMLParser.HTMLParser.__init__(self)
-        self._urls = []
-    
-    def handle_starttag(self, tag, attrs):
-        """override HTMLParser.HTMLParser.handle_starttag"""
-        for a, v in attrs:
-            if a.lower().strip() == "href":
-                self._urls.append(v)
