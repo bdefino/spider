@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import csv
+import os
 import StringIO
 import threading
 
@@ -73,6 +74,25 @@ class StorageCallback(Callback):
         self.db.__enter__()
 
     def __call__(self, response):
+        body = StringIO.StringIO(response.read())
+        
+        def seek_set_when_read(n = None):
+            """
+            go back to the beginning when the contents are exhausted
+
+            this is especially useful for getting around the issue
+            of multiple reads on a socket._fileobject
+            """
+            content = body.read(n)
+            pos = seek_to = body.tell()
+            body.seek(0, os.SEEK_END)
+
+            if pos == body.tell():
+                seek_to = 0
+            body.seek(seek_to, os.SEEK_SET)
+            return content
+
+        response.read = seek_set_when_read
         self.db[self._generate_id(response)] = self._generate_data(response)
         return Callback.__call__(self, response)
 

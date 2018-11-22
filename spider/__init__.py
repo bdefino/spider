@@ -21,7 +21,7 @@ from callback import BodyStorageCallback, Callback, DEFAULT_CALLBACK, \
 import htmlextract
 from htmlextract import AttributeExtractor, extract_links, Extractor, \
     TagExtractor
-from lib import threaded, uri
+from lib import db, threaded, uri
 import spider
 from spider import RequestFactory, Spider
 import url
@@ -32,7 +32,7 @@ __doc__ = "simple web spidering"
 if __name__ == "__main__":
     import Queue
     import sys
-    sys.argv += ["http://google.com", "-n", "10", "-t", "0.5"]
+    
     def _help():
         """print help text"""
         print "a basic web spider\n" \
@@ -42,6 +42,7 @@ if __name__ == "__main__":
               "\t-h, --help\tshow this text and exit\n" \
               "\t\t--headers PATH\tstore response headers to a database\n" \
               "\t-n, --nthreads INT\tthe number of concurrent threads\n" \
+              "\t-r, --responses PATH\tstore full responses to a database\n" \
               "\t-t, --timeout FLOAT\tthe timeout\n" \
               "\t\t--webgraph PATH\tstore webgraph to a database\n" \
               "URLS\n" \
@@ -70,15 +71,15 @@ if __name__ == "__main__":
                     print "Missing argument."
                     _help()
                     sys.exit()
-                _callback = BodyStorageCallback(_db.DB(sys.argv[i + 1]))
                 i += 1
+                _callback = BodyStorageCallback(db.DB(sys.argv[i]))
             elif arg == "headers":
                 if i == len(sys.argv) - 1:
                     print "Missing argument."
                     _help()
                     sys.exit()
-                _callback = HeaderStorageCallback(_db.DB(sys.argv[i + 1]))
                 i += 1
+                _callback = HeaderStorageCallback(db.DB(sys.argv[i]))
             elif arg == "help":
                 _help()
                 sys.exit()
@@ -98,8 +99,8 @@ if __name__ == "__main__":
                     print "Missing argument."
                     _help()
                     sys.exit()
-                _callback = callback.StorageCallback(_db.DB(sys.argv[i + 1]))
                 i += 1
+                _callback = StorageCallback(db.DB(sys.argv[i]))
             elif arg == "timeout":
                 if i == len(sys.argv) - 1:
                     print "Missing argument."
@@ -116,9 +117,8 @@ if __name__ == "__main__":
                     print "Missing argument."
                     _help()
                     sys.exit()
-                _callback = callback.WebgraphStorageCallback(_db.DB(
-                    sys.argv[i + 1]))
                 i += 1
+                _callback = WebgraphStorageCallback(db.DB(sys.argv[i]))
             else:
                 print "Invalid argument."
                 _help()
@@ -141,6 +141,13 @@ if __name__ == "__main__":
                     except ValueError:
                         pass
                     i += 1
+                elif c == 'r':
+                    if i == len(sys.argv) - 1:
+                        print "Missing argument."
+                        _help()
+                        sys.exit()
+                    i += 1
+                    _callback = StorageCallback(db.DB(sys.argv[i]))
                 elif c == 't':
                     if i == len(sys.argv) - 1:
                         print "Missing argument."

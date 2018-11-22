@@ -102,7 +102,7 @@ class SlavingSpider(Spider):
     def __call__(self):
         """continually crawl until told otherwise"""
         try:
-            while not self.url_queue.empty() or self.ntasks:
+            while not self.url_queue.empty() or self.ntasks > 0:
                 self._threaded.put(self.handle_url, self.url_queue.get())
                 self.ntasks += 1
                 
