@@ -104,7 +104,7 @@ class HeaderStorageCallback(StorageCallback):
 
 class WebgraphStorageCallback(StorageCallback):
     """
-    store the webgraph node as a CSV list
+    store the webgraph node as a JSON list
 
     note that the _generate_data function takes a list of links
     instead of a response
@@ -119,12 +119,5 @@ class WebgraphStorageCallback(StorageCallback):
         return _continue, links
 
     def _generate_data(self, links):
-        """return a CSV list of links"""
-        fp = StringIO.StringIO()
-        writer = csv.writer(fp)
-
-        for l in links:
-            writer.writerow([l])
-        doc = fp.getvalue()
-        fp.close()
-        return doc
+        """return a JSON list of links"""
+        return json.dumps(links)

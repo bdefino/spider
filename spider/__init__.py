@@ -15,33 +15,38 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 __package__ = __name__
 
-import Queue
-import sys
-
 import callback
+from callback import BodyStorageCallback, Callback, DEFAULT_CALLBACK, \
+    HeaderStorageCallback, StorageCallback, WebgraphStorageCallback
 import htmlextract
-from lib import uri
+from htmlextract import AttributeExtractor, extract_links, Extractor, \
+    TagExtractor
+from lib import threaded, uri
 import spider
+from spider import RequestFactory, Spider
 import url
+from url import DEFAULT_URL_CLASS
 
 __doc__ = "simple web spidering"
 
-def _help():
-    """print help text"""
-    print "a basic web spider\n" \
-          "Usage: python spider.py [OPTIONS] URLS\n" \
-          "OPTIONS\n" \
-          "\t\t--bodies PATH\tstore response bodies to a database\n" \
-          "\t-h, --help\tshow this text and exit\n" \
-          "\t\t--headers PATH\tstore response headers to a database\n" \
-          "\t-n, --nthreads INT\tthe number of concurrent threads\n" \
-          "\t-t, --timeout FLOAT\tthe timeout\n" \
-          "\t\t--webgraph PATH\tstore webgraph to a database\n" \
-          "URLS\n" \
-          "\ta list of URLs"
-
-def main():
-    """run the spider"""
+if __name__ == "__main__":
+    import Queue
+    import sys
+    sys.argv += ["http://google.com", "-n", "10", "-t", "0.5"]
+    def _help():
+        """print help text"""
+        print "a basic web spider\n" \
+              "Usage: python spider.py [OPTIONS] URLS\n" \
+              "OPTIONS\n" \
+              "\t\t--bodies PATH\tstore response bodies to a database\n" \
+              "\t-h, --help\tshow this text and exit\n" \
+              "\t\t--headers PATH\tstore response headers to a database\n" \
+              "\t-n, --nthreads INT\tthe number of concurrent threads\n" \
+              "\t-t, --timeout FLOAT\tthe timeout\n" \
+              "\t\t--webgraph PATH\tstore webgraph to a database\n" \
+              "URLS\n" \
+              "\ta list of URLs"
+    
     i = 1
     _callback = callback.DEFAULT_CALLBACK
     nthreads = 0
@@ -156,12 +161,8 @@ def main():
         i += 1
 
     if nthreads:
-        _spider = spider.ThreadedSpider(callback = _callback,
-            nthreads = nthreads, url_queue = url_queue, timeout = timeout)
-    else:
-        _spider = spider.Spider(callback = _callback, url_queue = url_queue,
+        _spider = spider.SlavingSpider(nthreads, url_queue, _callback,
             timeout = timeout)
+    else:
+        _spider = spider.Spider(url_queue, _callback, timeout = timeout)
     _spider()
-
-if __name__ == "__main__":
-    main()

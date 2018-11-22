@@ -42,11 +42,9 @@ class Spider:
     native Python url_queue API)
     """
     
-    def __init__(self, url_queue = None, callback = None,
+    def __init__(self, url_queue = None, callback = callback.DEFAULT_CALLBACK,
             request_factory = None, url_class = None, *urlopen_args,
             **urlopen_kwargs):
-        if not callback:
-            callback = callback.DEFAULT_CALLBACK
         self.callback = callback
 
         if not request_factory:
@@ -88,23 +86,33 @@ class Spider:
         except (socket.error, ssl.SSLError, urllib2.HTTPError,
                 urllib2.URLError):
             return True
-
+        
         for l in links:
             self.url_queue.put(l)
         return _continue
 
-class ThreadedSpider(Spider, threaded.Threaded):
-    def __init__(self, url_queue = None, callback = None, nthreads = 1,
-            request_factory = None, url_class = None, *args, **kwargs):
-        Spider.__init__(self, url_queue, callback, request_factory, url_class,
-            *args, **kwargs)
-        threaded.Threaded.__init__(self, nthreads, True)
+class SlavingSpider(Spider):
+    """a spider that delegates tasks to slave threads"""
+    
+    def __init__(self, nthreads = 1, *args, **kwargs):
+        Spider.__init__(self, *args, **kwargs)
+        self.ntasks = 0
+        self._threaded = threaded.Slaving(nthreads, True)
 
     def __call__(self):
+        """continually crawl until told otherwise"""
         try:
-            while self.empty() or self.get().output:
-                if self.url_queue.empty() and not self.nactive_threads.get():
-                    break
-                self.execute(self.handle_url, self.url_queue.get())
+            while not self.url_queue.empty() or self.ntasks:
+                self._threaded.put(self.handle_url, self.url_queue.get())
+                self.ntasks += 1
+                
+                try:
+                    if not self._threaded._output_queue.get_nowait().output:
+                        break
+                    self.ntasks -= 1
+                except Queue.Empty:
+                    pass
         except KeyboardInterrupt:
             pass
+        finally:
+            self._threaded.kill_all()
