@@ -20,7 +20,7 @@ import time
 import urllib2
 
 import callback
-from lib import threaded
+from lib import disque, threaded
 import url
 
 __doc__ = "web spiders"
@@ -58,7 +58,7 @@ class Spider:
         self.urlopen_kwargs = urlopen_kwargs
 
         if not url_queue:
-            url_queue = Queue.Queue()
+            url_queue = disque.Disque("queue")
         self.url_queue = url_queue
 
     def __call__(self):

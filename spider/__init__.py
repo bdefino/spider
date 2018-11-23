@@ -21,7 +21,7 @@ from callback import BodyStorageCallback, Callback, DEFAULT_CALLBACK, \
 import htmlextract
 from htmlextract import AttributeExtractor, extract_links, Extractor, \
     TagExtractor
-from lib import db, threaded, uri
+from lib import db, disque, threaded, uri
 import spider
 from spider import RequestFactory, Spider
 import url
@@ -167,6 +167,13 @@ if __name__ == "__main__":
             url_queue.put(arg)
         i += 1
 
+    if isinstance(_callback, StorageCallback):
+        _url_queue = url_queue
+        url_queue = disque.Disque(StorageCallback.db.directory)
+
+        while not _url_queue.empty():
+            url_queue.put(_url_queue.get())
+    
     if nthreads:
         _spider = spider.SlavingSpider(nthreads, url_queue, _callback,
             timeout = timeout)
