@@ -21,6 +21,7 @@ import threading
 
 import htmlextract
 from lib import db as _db
+import rule
 import url
 
 __doc__ = "spider callbacks"
@@ -33,14 +34,25 @@ class Callback:
     and tells the spider whether to continue (similarly to ftw and nftw in C)
     """
     
-    def __init__(self, url_class = None, depth = -1):
+    def __init__(self, url_class = None, rules = (rule.Rule(), ), depth = -1):
         self.depth = 0
         self.depth_remaining = depth
         self._lock = threading.RLock() # automatically determines blocking
+        self.rules = rules
         
         if not url_class:
             url_class = url.DEFAULT_URL_CLASS
         self.url_class = url_class
+
+    def _apply_rules(self, link):
+        """
+        apply the rules to a link, with short-circuit execution;
+        return whether the link satisfies the rule
+        """
+        for i, rule in enumerate(self.rules):
+            if not rule(link):
+                break
+        return i == len(self.rules) - 1
 
     def __call__(self, response):
         """must return a tuple as such: (continue?, links)"""
@@ -51,9 +63,9 @@ class Callback:
 
             if __debug__:
                 print "(%u)" % self.depth, url
-            return not self.depth == 0, \
-                [str(url.bind(l)) for l in htmlextract.extract_links(
-                    response.info(), response.read())]
+            links = [str(url.bind(l)) for l in htmlextract.extract_links(
+                response.info(), response.read())]
+            return not self.depth == 0, filter(self._apply_rules, links)
 
 DEFAULT_CALLBACK = Callback()
 
