@@ -58,7 +58,7 @@ class Spider:
         self.urlopen_kwargs = urlopen_kwargs
 
         if not url_queue:
-            url_queue = disque.Disque("queue")
+            url_queue = disque.Disque("queue", chunk_size = 2048) # for speed
         self.url_queue = url_queue
 
     def __call__(self):
@@ -79,6 +79,7 @@ class Spider:
             getattr(self.url_queue, "__exit__")()
 
     def handle_url(self, url):
+        """crawl and return whether to continue"""
         try:
             response = urllib2.urlopen(self.request_factory(url),
                 *self.urlopen_args, **self.urlopen_kwargs)
@@ -91,28 +92,32 @@ class Spider:
             self.url_queue.put(l)
         return _continue
 
-class SlavingSpider(Spider):
-    """a spider that delegates tasks to slave threads"""
+class BlockingSpider(Spider):
+    """a spider that blocks until a new worker thread can be allocated"""
     
     def __init__(self, nthreads = 1, *args, **kwargs):
         Spider.__init__(self, *args, **kwargs)
-        self.ntasks = 0
-        self._threaded = threaded.Slaving(nthreads, True)
+        self.ntasks = threaded.Synchronized(0)
+        self._threaded = threaded.Blocking(nthreads, True)
 
     def __call__(self):
         """continually crawl until told otherwise"""
         try:
-            while not self.url_queue.empty() or self.ntasks > 0:
-                self._threaded.put(self.handle_url, self.url_queue.get())
-                self.ntasks += 1
-                
+            while not self.url_queue.empty() or self.ntasks.get() > 0:
                 try:
-                    if not self._threaded._output_queue.get_nowait().output:
-                        break
-                    self.ntasks -= 1
-                except Queue.Empty:
-                    pass
+                    self._threaded.put(self._handle_handle_url,
+                        self.url_queue.get())
+                except ValueError:
+                    continue
+                self.ntasks.transform(lambda n: n + 1)
         except KeyboardInterrupt:
             pass
-        finally:
-            self._threaded.kill_all()
+
+    def _handle_handle_url(self, url):
+        """
+        crawl and modify the number of tasks
+        to signal whether to continue
+        """
+        if not self.handle_url(url): # signal exit
+            self.ntasks.set(0) # offset of -1 from 0 accounts for loop
+        self.ntasks.transform(lambda n: n - 1)

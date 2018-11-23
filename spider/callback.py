@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import csv
+import json
 import os
 import StringIO
 import threading
@@ -135,7 +136,7 @@ class WebgraphStorageCallback(StorageCallback):
 
     def __call__(self, response):
         _continue, links = Callback.__call__(self, response)
-        self.db[self._generate_id(response)] = self._generate_data(response)
+        self.db[self._generate_id(response)] = self._generate_data(links)
         return _continue, links
 
     def _generate_data(self, links):

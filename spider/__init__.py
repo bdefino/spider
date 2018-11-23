@@ -30,6 +30,7 @@ from url import DEFAULT_URL_CLASS
 __doc__ = "simple web spidering"
 
 if __name__ == "__main__":
+    import os
     import Queue
     import sys
     
@@ -169,13 +170,14 @@ if __name__ == "__main__":
 
     if isinstance(_callback, StorageCallback):
         _url_queue = url_queue
-        url_queue = disque.Disque(StorageCallback.db.directory)
+        url_queue = disque.Disque(os.path.join(_callback.db.directory,
+            "queue"), chunk_size = 2048) # for speed
 
         while not _url_queue.empty():
             url_queue.put(_url_queue.get())
     
     if nthreads:
-        _spider = spider.SlavingSpider(nthreads, url_queue, _callback,
+        _spider = spider.BlockingSpider(nthreads, url_queue, _callback,
             timeout = timeout)
     else:
         _spider = spider.Spider(url_queue, _callback, timeout = timeout)
