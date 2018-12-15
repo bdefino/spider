@@ -21,19 +21,10 @@ import urllib2
 
 import callback
 from lib import disque, threaded
+import requestfactory
 import url
 
 __doc__ = "web spiders"
-
-class RequestFactory:
-    """a callable for creating factory requests"""
-
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-
-    def __call__(self, url):
-        return urllib2.Request(url, *self.args, **self.kwargs)
 
 class Spider:
     """
@@ -43,16 +34,11 @@ class Spider:
     """
     
     def __init__(self, url_queue = None, callback = callback.DEFAULT_CALLBACK,
-            request_factory = None, url_class = None, *urlopen_args,
+            request_factory = requestfactory.RequestFactory(),
+            url_class = url.DEFAULT_URL_CLASS, *urlopen_args,
             **urlopen_kwargs):
         self.callback = callback
-
-        if not request_factory:
-            request_factory = RequestFactory()
         self.request_factory = request_factory
-
-        if not url_class:
-            url_class = url.DEFAULT_URL_CLASS
         self.url_class = url_class # this should be (a subclass of) uri.URL
         self.urlopen_args = urlopen_args
         self.urlopen_kwargs = urlopen_kwargs

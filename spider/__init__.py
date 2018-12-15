@@ -22,8 +22,10 @@ import htmlextract
 from htmlextract import AttributeExtractor, extract_links, Extractor, \
     TagExtractor
 from lib import db, disque, threaded, uri
+import requestfactory
+from requestfactory import RequestFactory
 import spider
-from spider import RequestFactory, Spider
+from spider import Spider
 import url
 from url import DEFAULT_URL_CLASS
 
