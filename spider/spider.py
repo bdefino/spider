@@ -66,6 +66,9 @@ class Spider:
 
     def handle_url(self, url):
         """crawl and return whether to continue"""
+        if not self.callback._apply_rules(url):
+            return True
+        
         try:
             response = urllib2.urlopen(self.request_factory(url),
                 *self.urlopen_args, **self.urlopen_kwargs)

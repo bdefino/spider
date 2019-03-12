@@ -104,10 +104,13 @@ class StorageCallback(Callback):
                 seek_to = 0
             body.seek(seek_to, os.SEEK_SET)
             return content
-
-        response.read = seek_set_when_read
-        self.db[self._generate_id(response)] = self._generate_data(response)
-        return Callback.__call__(self, response)
+        
+        _continue, links = Callback.__call__(self, response)
+        
+        if _continue:
+            response.read = seek_set_when_read
+            self.db[self._generate_id(response)] = self._generate_data(response)
+        return _continue, links
 
     def __del__(self):
         self.db.__exit__()
