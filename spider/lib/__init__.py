@@ -17,6 +17,5 @@ import db
 import disque
 import threaded
 import uri
-import withfile
 
 __doc__ = "library"
