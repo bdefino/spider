@@ -30,7 +30,7 @@ class Spider:
     """
     a web spider (by default, single-threaded)
     which gets/puts URLs to/from the url_queue (which should implement the
-    native Python url_queue API)
+    native Python Queue API)
     """
     
     def __init__(self, url_queue = None, callback = callback.DEFAULT_CALLBACK,
@@ -66,7 +66,7 @@ class Spider:
 
     def handle_url(self, url):
         """crawl and return whether to continue"""
-        if not self.callback._apply_rules(url):
+        if not self.callback._apply_rules(url): # skip
             return True
         
         try:
@@ -74,7 +74,7 @@ class Spider:
                 *self.urlopen_args, **self.urlopen_kwargs)
             _continue, links = self.callback(response)
         except (socket.error, ssl.SSLError, urllib2.HTTPError,
-                urllib2.URLError):
+                urllib2.URLError): # ignore protocol errors
             return True
         
         for l in links:

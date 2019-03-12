@@ -34,7 +34,7 @@ class Callback:
     and tells the spider whether to continue (similarly to ftw and nftw in C)
     """
     
-    def __init__(self, url_class = None, rules = (rule.Rule(), ), depth = -1):
+    def __init__(self, url_class = None, rules = (), depth = -1):
         self.depth = 0
         self.depth_remaining = depth
         self._lock = threading.RLock() # automatically determines blocking
@@ -65,7 +65,8 @@ class Callback:
                 print "(%u)" % self.depth, url
             links = [str(url.bind(l)) for l in htmlextract.extract_links(
                 response.info(), response.read())]
-            return not self.depth == 0, filter(self._apply_rules, links)
+            return not self.depth == 0, \
+                filter(self._apply_rules, links) # save queue space
 
 DEFAULT_CALLBACK = Callback()
 
@@ -87,29 +88,14 @@ class StorageCallback(Callback):
         self.db.__enter__()
 
     def __call__(self, response):
-        body = StringIO.StringIO(response.read())
-        
-        def seek_set_when_read(n = None):
-            """
-            go back to the beginning when the contents are exhausted
-
-            this is especially useful for getting around the issue
-            of multiple reads on a socket._fileobject
-            """
-            content = body.read(n)
-            pos = seek_to = body.tell()
-            body.seek(0, os.SEEK_END)
-
-            if pos == body.tell():
-                seek_to = 0
-            body.seek(seek_to, os.SEEK_SET)
-            return content
-        
+        sio = StringIO.StringIO(response.read())
+        response.read = sio.read # bypass socket._fileobject restrictions
         _continue, links = Callback.__call__(self, response)
         
-        if _continue:
-            response.read = seek_set_when_read
-            self.db[self._generate_id(response)] = self._generate_data(response)
+        if _continue: # store
+            sio.seek(0, os.SEEK_SET)
+            self.db[self._generate_id(response)] = self._generate_data(
+                response)
         return _continue, links
 
     def __del__(self):
