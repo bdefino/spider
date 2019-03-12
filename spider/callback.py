@@ -47,12 +47,12 @@ class Callback:
     def _apply_rules(self, link):
         """
         apply the rules to a link, with short-circuit execution;
-        return whether the link satisfies the rule
+        return whether the link satisfies the rules
         """
-        for i, rule in enumerate(self.rules):
+        for rule in self.rules:
             if not rule(link):
-                break
-        return i == len(self.rules) - 1
+                return False
+        return True
 
     def __call__(self, response):
         """must return a tuple as such: (continue?, links)"""

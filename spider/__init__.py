@@ -24,8 +24,10 @@ from htmlextract import AttributeExtractor, extract_links, Extractor, \
 from lib import db, disque, threaded, uri
 import requestfactory
 from requestfactory import RequestFactory
+import rule
+from rule import Rule
 import spider
-from spider import Spider
+from spider import BlockingSpider, Spider
 import url
 from url import DEFAULT_URL_CLASS
 
@@ -179,8 +181,8 @@ if __name__ == "__main__":
             url_queue.put(_url_queue.get())
     
     if nthreads:
-        _spider = spider.BlockingSpider(nthreads, url_queue, _callback,
+        _spider = BlockingSpider(nthreads, url_queue, _callback,
             timeout = timeout)
     else:
-        _spider = spider.Spider(url_queue, _callback, timeout = timeout)
+        _spider = Spider(url_queue, _callback, timeout = timeout)
     _spider()
