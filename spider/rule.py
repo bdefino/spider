@@ -55,7 +55,7 @@ class DomainRule(Rule):
             raise RuleError()
 
 class RuleApplicationError(RuntimeError):
-    """there was a problem applying a rule"""
+    """there was a problem enforcing a rule"""
     
-    def __init__(self, message = "unable to apply rule"):
+    def __init__(self, message = "unable to enforce rule"):
         RuntimeError.__init__(self, message)

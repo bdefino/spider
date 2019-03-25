@@ -66,7 +66,7 @@ class Spider:
 
     def handle_url(self, url):
         """crawl and return whether to continue"""
-        if not self.callback._apply_rules(url): # skip
+        if not self.callback._enforce_rules(url): # skip
             return True
         
         try:

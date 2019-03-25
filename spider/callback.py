@@ -43,17 +43,6 @@ class Callback:
         if not url_class:
             url_class = url.DEFAULT_URL_CLASS
         self.url_class = url_class
-
-    def _apply_rules(self, link):
-        """
-        apply the rules to a link, with short-circuit execution;
-        return whether the link satisfies the rules
-        """
-        for rule in self.rules:
-            if not rule(link):
-                return False
-        return True
-
     def __call__(self, response):
         """must return a tuple as such: (continue?, links)"""
         with self._lock:
@@ -66,7 +55,17 @@ class Callback:
             links = [str(url.bind(l)) for l in htmlextract.extract_links(
                 response.info(), response.read())]
             return not self.depth == 0, \
-                filter(self._apply_rules, links) # save queue space
+                filter(self._enforce_rules, links) # save queue space
+
+    def _enforce_rules(self, link):
+        """
+        enforce the rules to a link, with short-circuit execution;
+        return whether the link satisfies the rules
+        """
+        for rule in self.rules:
+            if not rule(link):
+                return False
+        return True
 
 DEFAULT_CALLBACK = Callback()
 
