@@ -16,20 +16,12 @@
 __package__ = __name__
 
 import callback
-from callback import BodyStorageCallback, Callback, DEFAULT_CALLBACK, \
-    HeaderStorageCallback, StorageCallback, WebgraphStorageCallback
 import htmlextract
-from htmlextract import AttributeExtractor, extract_links, Extractor, \
-    TagExtractor
-from lib import db, disque, threaded, uri
+import lib
 import requestfactory
-from requestfactory import RequestFactory
 import rule
-from rule import Rule
 import spider
-from spider import BlockingSpider, Spider
 import url
-from url import DEFAULT_URL_CLASS
 
 __doc__ = "simple web spidering"
 
@@ -77,14 +69,14 @@ if __name__ == "__main__":
                     _help()
                     sys.exit()
                 i += 1
-                _callback = BodyStorageCallback(db.DB(sys.argv[i]))
+                _callback = callback.BodyStorageCallback(db.DB(sys.argv[i]))
             elif arg == "headers":
                 if i == len(sys.argv) - 1:
                     print "Missing argument."
                     _help()
                     sys.exit()
                 i += 1
-                _callback = HeaderStorageCallback(db.DB(sys.argv[i]))
+                _callback = callback.HeaderStorageCallback(db.DB(sys.argv[i]))
             elif arg == "help":
                 _help()
                 sys.exit()
@@ -105,7 +97,7 @@ if __name__ == "__main__":
                     _help()
                     sys.exit()
                 i += 1
-                _callback = StorageCallback(db.DB(sys.argv[i]))
+                _callback = callback.StorageCallback(db.DB(sys.argv[i]))
             elif arg == "timeout":
                 if i == len(sys.argv) - 1:
                     print "Missing argument."
@@ -123,7 +115,8 @@ if __name__ == "__main__":
                     _help()
                     sys.exit()
                 i += 1
-                _callback = WebgraphStorageCallback(db.DB(sys.argv[i]))
+                _callback = callback.WebgraphStorageCallback(db.DB(
+                    sys.argv[i]))
             else:
                 print "Invalid argument."
                 _help()
@@ -152,7 +145,7 @@ if __name__ == "__main__":
                         _help()
                         sys.exit()
                     i += 1
-                    _callback = StorageCallback(db.DB(sys.argv[i]))
+                    _callback = callback.StorageCallback(db.DB(sys.argv[i]))
                 elif c == 't':
                     if i == len(sys.argv) - 1:
                         print "Missing argument."
@@ -172,17 +165,17 @@ if __name__ == "__main__":
             url_queue.put(arg)
         i += 1
 
-    if isinstance(_callback, StorageCallback):
+    if isinstance(_callback, callback.StorageCallback):
         _url_queue = url_queue
-        url_queue = disque.Disque(os.path.join(_callback.db.directory,
+        url_queue = lib.disque.Disque(os.path.join(_callback.db.directory,
             "queue"), chunk_size = 2048) # for speed
 
         while not _url_queue.empty():
             url_queue.put(_url_queue.get())
     
     if nthreads:
-        _spider = BlockingSpider(nthreads, url_queue, _callback,
+        _spider = spider.BlockingSpider(nthreads, url_queue, _callback,
             timeout = timeout)
     else:
-        _spider = Spider(url_queue, _callback, timeout = timeout)
+        _spider = spider.Spider(url_queue, _callback, timeout = timeout)
     _spider()
