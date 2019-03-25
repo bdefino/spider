@@ -20,7 +20,7 @@ import htmlextract
 import lib
 import requestfactory
 import rule
-import spider
+from spider import BlockingSpider, Spider
 import url
 
 __doc__ = "simple web spidering"
@@ -174,8 +174,8 @@ if __name__ == "__main__":
             url_queue.put(_url_queue.get())
     
     if nthreads:
-        _spider = spider.BlockingSpider(nthreads, url_queue, _callback,
+        _spider = BlockingSpider(nthreads, url_queue, _callback,
             timeout = timeout)
     else:
-        _spider = spider.Spider(url_queue, _callback, timeout = timeout)
+        _spider = Spider(url_queue, _callback, timeout = timeout)
     _spider()
