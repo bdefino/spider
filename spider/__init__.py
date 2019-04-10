@@ -69,14 +69,16 @@ if __name__ == "__main__":
                     _help()
                     sys.exit()
                 i += 1
-                _callback = callback.BodyStorageCallback(db.DB(sys.argv[i]))
+                _callback = callback.BodyStorageCallback(lib.db.DB(
+                    sys.argv[i]))
             elif arg == "headers":
                 if i == len(sys.argv) - 1:
                     print "Missing argument."
                     _help()
                     sys.exit()
                 i += 1
-                _callback = callback.HeaderStorageCallback(db.DB(sys.argv[i]))
+                _callback = callback.HeaderStorageCallback(lib.db.DB(
+                    sys.argv[i]))
             elif arg == "help":
                 _help()
                 sys.exit()
@@ -97,7 +99,7 @@ if __name__ == "__main__":
                     _help()
                     sys.exit()
                 i += 1
-                _callback = callback.StorageCallback(db.DB(sys.argv[i]))
+                _callback = callback.StorageCallback(lib.db.DB(sys.argv[i]))
             elif arg == "timeout":
                 if i == len(sys.argv) - 1:
                     print "Missing argument."
@@ -115,7 +117,7 @@ if __name__ == "__main__":
                     _help()
                     sys.exit()
                 i += 1
-                _callback = callback.WebgraphStorageCallback(db.DB(
+                _callback = callback.WebgraphStorageCallback(lib.db.DB(
                     sys.argv[i]))
             else:
                 print "Invalid argument."
@@ -145,7 +147,8 @@ if __name__ == "__main__":
                         _help()
                         sys.exit()
                     i += 1
-                    _callback = callback.StorageCallback(db.DB(sys.argv[i]))
+                    _callback = callback.StorageCallback(lib.db.DB(
+                        sys.argv[i]))
                 elif c == 't':
                     if i == len(sys.argv) - 1:
                         print "Missing argument."
