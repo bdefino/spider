@@ -43,6 +43,7 @@ class Callback:
         if not url_class:
             url_class = url.DEFAULT_URL_CLASS
         self.url_class = url_class
+    
     def __call__(self, response):
         """must return a tuple as such: (continue?, links)"""
         with self._lock:
